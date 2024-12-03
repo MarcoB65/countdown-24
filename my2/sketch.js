@@ -1,13 +1,40 @@
 import { createEngine } from "../../shared/engine.js";
 
-const { renderer, input, run } = createEngine();
+const { renderer, input, run, audio } = createEngine();
 const { ctx, canvas } = renderer;
 
 const particles = [];
-const maxParticles = 2000;
+const maxParticles = 7000;
 const circleRadius = canvas.height / 4; // Il cerchio è metà dell'altezza del canvas
+const mouseCircleRadius = 700; // Raggio del cerchio che segue il mouse
 
-// Genera particelle inizialmente al centro
+// SOUND;
+
+// const ambienceSound = await audio.load({
+//   src: "sound/Sound_vacum.wav",
+//   loop: false,
+// });
+
+// let ambienceSoundInst = null;
+
+// function playSound() {
+//   if (!ambienceSoundInst) {
+//     ambienceSoundInst = ambienceSound.play();
+//   }
+// }
+
+// function stopSound() {
+//   if (ambienceSoundInst) {
+//     console.log("mouse up / stop sound");
+//     // ambienceSoundInst.stop();
+//     ambienceSoundInst = null;
+//   }
+//}
+
+document.addEventListener("mousedown", playSound);
+document.addEventListener("mouseup", stopSound);
+
+// CREATE PARTICLES ON THE CENTER POINT
 for (let i = 0; i < maxParticles; i++) {
   particles.push({
     x: canvas.width / 2, // Posizione iniziale al centro
@@ -16,79 +43,145 @@ for (let i = 0; i < maxParticles; i++) {
     targetScale: 1, // Scala finale
     reachedTarget: false,
     angle: Math.random() * Math.PI * 2,
-    distance: Math.random() * circleRadius,
+    distance: Math.sqrt(Math.random()) * circleRadius,
     velocityX: 0,
     velocityY: 0,
+    weight: Math.random() * 2,
   });
 }
 
 run(update);
 
 function update(dt) {
-  const x = canvas.width / 2;
-  const y = canvas.height / 2;
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
   const textSize = canvas.height / 2;
 
   const mouseX = input.getX();
   const mouseY = input.getY();
   const isMouseDown = input.isPressed();
 
-  // Calcola il movimento e l'animazione delle particelle
-  particles.forEach((particle) => {
+  const ovaleWidth = 100; // Larghezza dell'ovale
+  const ovaleHeight = 180; // Altezza dell'ovale
+
+  // DELETE PARTICLES1
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const particle = particles[i];
+
+    // HOLE DIRECTION
+    const dxOval = centerX - mouseX;
+    const dyOval = centerY - mouseY;
+    const angle = Math.atan2(dyOval, dxOval);
+
+    // Trasformazione inversa per verificare se la particella è nell'ovale
+    const cos = Math.cos(-angle);
+    const sin = Math.sin(-angle);
+    const dx = particle.x - mouseX;
+    const dy = particle.y - mouseY;
+    const localX = dx * cos - dy * sin;
+    const localY = dx * sin + dy * cos;
+
+    //BOUNDING BOX!
+
+    if (
+      Math.abs(localX) < ovaleWidth / 2 &&
+      Math.abs(localY) < ovaleHeight / 2
+    ) {
+      // delete particles
+      particles.splice(i, 1);
+      continue;
+    }
+
+    //
+    //
+    //
+
     if (!particle.reachedTarget) {
-      // Espansione iniziale verso la posizione target
-      particle.scale += dt * 2; // Velocità di espansione
+      particle.scale += dt * 2;
       if (particle.scale >= particle.targetScale) {
         particle.scale = particle.targetScale;
         particle.reachedTarget = true;
       }
-
-      // Sposta la particella dalla posizione iniziale verso il target
-      particle.x =
-        x + Math.cos(particle.angle) * particle.distance * particle.scale;
-      particle.y =
-        y + Math.sin(particle.angle) * particle.distance * particle.scale;
+      particle.x = centerX + Math.cos(particle.angle) * particle.distance;
+      particle.y = centerY + Math.sin(particle.angle) * particle.distance;
     } else if (isMouseDown) {
-      // Attirare particelle verso il mouse quando premuto
-      const dx = mouseX - particle.x;
-      const dy = mouseY - particle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const attractionSpeed = 1000; // Velocità di attrazione
+      const dxMouse = mouseX - particle.x;
+      const dyMouse = mouseY - particle.y;
+      const distance = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
 
-      if (distance > 1) {
-        particle.velocityX += (dx / distance) * attractionSpeed * dt;
-        particle.velocityY += (dy / distance) * attractionSpeed * dt;
+      if (distance < mouseCircleRadius) {
+        const attractionSpeed = 2000; // Velocità di attrazione
+        particle.velocityX += (dxMouse / distance) * attractionSpeed * dt;
+        particle.velocityY += (dyMouse / distance) * attractionSpeed * dt;
+
+        // SCALING
+        const distToOvalCenter = Math.sqrt(
+          (particle.x - mouseX) ** 2 + (particle.y - mouseY) ** 2
+        );
+
+        const maxDistance = mouseCircleRadius;
+        particle.scale = Math.max(0, distToOvalCenter / maxDistance);
+
+        // DELETE IF SCALE IS 0
+        if (particle.scale <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
       }
     }
+
     particle.velocityX *= 0.99; // Riduzione graduale della velocità
     particle.velocityY *= 0.99;
     particle.x += particle.velocityX * dt;
     particle.y += particle.velocityY * dt;
-  });
+  }
 
-  // Disegna sfondo
+  // BACKGROUND
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Disegna il cerchio
-  ctx.beginPath();
-  ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 5;
-  ctx.stroke();
+  // // CERCLE
+  // ctx.beginPath();
+  // ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
+  // ctx.strokeStyle = "white";
+  // ctx.lineWidth = 5;
+  // ctx.stroke();
 
-  // Disegna particelle
+  // PARTICLES
   particles.forEach((particle) => {
     ctx.fillStyle = "white";
     ctx.beginPath();
-    ctx.arc(particle.x, particle.y, 10 * particle.scale, 0, Math.PI * 2); // Scala il raggio in base alla scala
+    ctx.arc(
+      particle.x,
+      particle.y,
+      10 * particle.scale * particle.weight,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
   });
 
-  // Disegna il numero "2"
+  // "2"
   ctx.fillStyle = "white";
   ctx.textBaseline = "middle";
   ctx.font = `${textSize}px Helvetica Neue, Helvetica, bold`;
   ctx.textAlign = "center";
-  ctx.fillText("2", x, y);
+  ctx.fillText("2", centerX, centerY);
+
+  const dx = centerX - mouseX;
+  const dy = centerY - mouseY;
+  const angle = Math.atan2(dy, dx);
+
+  ctx.save();
+  ctx.translate(mouseX, mouseY);
+  ctx.rotate(angle);
+
+  //VACUUM
+  ctx.beginPath();
+  ctx.ellipse(0, 0, ovaleWidth, ovaleHeight, 0, 0, Math.PI * 2);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "white";
+  ctx.stroke();
+
+  ctx.restore();
 }
