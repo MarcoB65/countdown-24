@@ -28,9 +28,9 @@ let svgImage = null;
   }
 })();
 
-// Crea array di palline
-const numCircles = 50;
-const circles = Array.from({ length: numCircles }, () => ({
+// Crea array di particelle rosse
+const numRedCircles = 50;
+const redCircles = Array.from({ length: numRedCircles }, () => ({
   x: Math.random() * canvas.width,
   y: Math.random() * canvas.height,
   radius: 10,
@@ -41,8 +41,21 @@ const circles = Array.from({ length: numCircles }, () => ({
   targetY: null, // Obiettivo Y per animazione
 }));
 
-// Variabile per determinare se le palline devono muoversi verso l'ovale
-let moveToOval = false;
+// Crea array di particelle bianche
+const numWhiteCircles = 30;
+const whiteCircles = Array.from({ length: numWhiteCircles }, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  radius: 5,
+  color: "white",
+  dx: (Math.random() - 0.5) * 4, // Velocità orizzontale
+  dy: (Math.random() - 0.5) * 4, // Velocità verticale
+  targetX: null, // Obiettivo X per animazione
+  targetY: null, // Obiettivo Y per animazione
+}));
+
+// Variabile per determinare se il mouse è premuto
+let isMousePressed = false;
 
 function update() {
   const x = canvas.width / 2;
@@ -65,7 +78,7 @@ function update() {
     );
   }
 
-  // Disegna un ovale al centro con bordo bianco di 5px
+  // Disegna il primo ovale
   const ovalWidth = canvas.width / 4.5; // Larghezza ovale
   const ovalHeight = canvas.height / 4; // Altezza ovale
 
@@ -76,61 +89,98 @@ function update() {
   ctx.stroke();
   ctx.closePath();
 
-  // Aggiorna e disegna ogni pallina
-  circles.forEach((circle, index) => {
-    // Se `moveToOval` è attivo, calcola la posizione target
-    if (moveToOval && circle.targetX !== null && circle.targetY !== null) {
-      // Sposta la pallina verso la posizione target
-      circle.x += (circle.targetX - circle.x) * 0.05; // Animazione fluida
-      circle.y += (circle.targetY - circle.y) * 0.05;
+  // Disegna il secondo ovale (più piccolo del 25%)
+  const smallOvalWidth = ovalWidth * 0.75;
+  const smallOvalHeight = ovalHeight * 0.75;
+
+  ctx.beginPath();
+  ctx.ellipse(x, y, smallOvalWidth, smallOvalHeight, 0, 0, 2 * Math.PI);
+  ctx.lineWidth = 3; // Larghezza del bordo
+  ctx.strokeStyle = "white"; // Colore del bordo
+  ctx.stroke();
+  ctx.closePath();
+
+  // Aggiorna e disegna particelle rosse
+  updateParticles(redCircles, isMousePressed, ovalWidth, ovalHeight);
+
+  // Aggiorna e disegna particelle bianche
+  updateParticles(
+    whiteCircles,
+    isMousePressed,
+    smallOvalWidth,
+    smallOvalHeight
+  );
+}
+
+// Funzione per aggiornare particelle
+function updateParticles(
+  particles,
+  moveToOval,
+  targetOvalWidth,
+  targetOvalHeight
+) {
+  const x = canvas.width / 2;
+  const y = canvas.height / 2;
+
+  particles.forEach((particle) => {
+    if (moveToOval && particle.targetX !== null && particle.targetY !== null) {
+      // Se il mouse è premuto, sposta verso la posizione target
+      particle.x += (particle.targetX - particle.x) * 0.05; // Animazione fluida
+      particle.y += (particle.targetY - particle.y) * 0.05;
     } else {
-      // Movimento casuale (se non in animazione)
-      circle.x += circle.dx;
-      circle.y += circle.dy;
+      // Movimento casuale se il mouse non è premuto
+      particle.x += particle.dx;
+      particle.y += particle.dy;
 
       // Controlla i bordi del canvas e inverte la direzione
       if (
-        circle.x - circle.radius < 0 ||
-        circle.x + circle.radius > canvas.width
+        particle.x - particle.radius < 0 ||
+        particle.x + particle.radius > canvas.width
       ) {
-        circle.dx *= -1;
+        particle.dx *= -1;
       }
       if (
-        circle.y - circle.radius < 0 ||
-        circle.y + circle.radius > canvas.height
+        particle.y - particle.radius < 0 ||
+        particle.y + particle.radius > canvas.height
       ) {
-        circle.dy *= -1;
+        particle.dy *= -1;
       }
     }
 
-    // Disegna la pallina
+    // Disegna la particella
     ctx.beginPath();
-    ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI);
-    ctx.fillStyle = circle.color;
+    ctx.arc(particle.x, particle.y, particle.radius, 0, 2 * Math.PI);
+    ctx.fillStyle = particle.color;
     ctx.fill();
     ctx.closePath();
   });
 }
 
-// Funzione per calcolare le posizioni lungo l'ovale
-function calculateOvalPositions() {
+// Funzione per calcolare le posizioni lungo un ovale
+function calculateOvalPositions(particles, targetOvalWidth, targetOvalHeight) {
   const x = canvas.width / 2;
   const y = canvas.height / 2;
-  const ovalWidth = canvas.width / 4.5; // Larghezza ovale
-  const ovalHeight = canvas.height / 4; // Altezza ovale
 
-  // Calcola posizioni equidistanti lungo il perimetro dell'ovale
-  circles.forEach((circle, i) => {
-    const angle = (i / numCircles) * 2 * Math.PI; // Angolo uniforme
-    circle.targetX = x + ovalWidth * Math.cos(angle); // Posizione X
-    circle.targetY = y + ovalHeight * Math.sin(angle); // Posizione Y
+  particles.forEach((particle, i) => {
+    const angle = (i / particles.length) * 2 * Math.PI; // Angolo uniforme
+    particle.targetX = x + targetOvalWidth * Math.cos(angle); // Posizione X
+    particle.targetY = y + targetOvalHeight * Math.sin(angle); // Posizione Y
   });
 }
 
-// Aggiungi l'evento di click per iniziare il movimento verso l'ovale
-canvas.addEventListener("click", () => {
-  moveToOval = true;
-  calculateOvalPositions();
+// Eventi per il mouse
+canvas.addEventListener("mousedown", () => {
+  isMousePressed = true;
+  calculateOvalPositions(redCircles, canvas.width / 4.5, canvas.height / 4);
+  calculateOvalPositions(
+    whiteCircles,
+    (canvas.width / 4.5) * 0.75,
+    (canvas.height / 4) * 0.75
+  );
+});
+
+canvas.addEventListener("mouseup", () => {
+  isMousePressed = false;
 });
 
 // Gestione del ciclo di rendering manualmente
