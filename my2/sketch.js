@@ -31,8 +31,8 @@ const mouseCircleRadius = 700; // Raggio del cerchio che segue il mouse
 //   }
 //}
 
-document.addEventListener("mousedown", playSound);
-document.addEventListener("mouseup", stopSound);
+// document.addEventListener("mousedown", playSound);
+// document.addEventListener("mouseup", stopSound);
 
 // CREATE PARTICLES ON THE CENTER POINT
 for (let i = 0; i < maxParticles; i++) {
