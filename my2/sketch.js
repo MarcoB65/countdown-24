@@ -1,6 +1,6 @@
 import { createEngine } from "../../shared/engine.js";
 
-const { renderer, input, run, audio } = createEngine();
+const { renderer, input, run, audio, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
 const particles = [];
@@ -8,31 +8,30 @@ const maxParticles = 7000;
 const circleRadius = canvas.height / 4; // Il cerchio è metà dell'altezza del canvas
 const mouseCircleRadius = 700; // Raggio del cerchio che segue il mouse
 
-// SOUND;
+const ambienceSound = await audio.load({
+  src: "sound/Sound_vacum.wav",
+  loop: false,
+});
 
-// const ambienceSound = await audio.load({
-//   src: "sound/Sound_vacum.wav",
-//   loop: false,
-// });
+let ambienceSoundInst = null;
 
-// let ambienceSoundInst = null;
+function playSound() {
+  if (!ambienceSoundInst) {
+    ambienceSoundInst = ambienceSound.play();
+  }
+}
 
-// function playSound() {
-//   if (!ambienceSoundInst) {
-//     ambienceSoundInst = ambienceSound.play();
-//   }
-// }
+function stopSound() {
+  if (ambienceSoundInst) {
+    console.log("mouse up / stop sound");
+    // ambienceSoundInst.stop();
+    ambienceSoundInst.setVolume(0);
+    ambienceSoundInst = null;
+  }
+}
 
-// function stopSound() {
-//   if (ambienceSoundInst) {
-//     console.log("mouse up / stop sound");
-//     // ambienceSoundInst.stop();
-//     ambienceSoundInst = null;
-//   }
-//}
-
-// document.addEventListener("mousedown", playSound);
-// document.addEventListener("mouseup", stopSound);
+document.addEventListener("mousedown", playSound);
+document.addEventListener("mouseup", stopSound);
 
 // CREATE PARTICLES ON THE CENTER POINT
 for (let i = 0; i < maxParticles; i++) {
@@ -73,7 +72,6 @@ function update(dt) {
     const dyOval = centerY - mouseY;
     const angle = Math.atan2(dyOval, dxOval);
 
-    // Trasformazione inversa per verificare se la particella è nell'ovale
     const cos = Math.cos(-angle);
     const sin = Math.sin(-angle);
     const dx = particle.x - mouseX;
@@ -182,6 +180,9 @@ function update(dt) {
   ctx.lineWidth = 3;
   ctx.strokeStyle = "white";
   ctx.stroke();
-
   ctx.restore();
+
+  if (scale <= 0) {
+    finish();
+  }
 }

@@ -1,6 +1,6 @@
 import { createEngine } from "../../shared/engine.js";
 
-const { renderer } = createEngine();
+const { renderer, run, audio, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
 // Percorso del file SVG
@@ -29,12 +29,12 @@ let svgImage = null;
 })();
 
 // Crea array di particelle rosse
-const numRedCircles = 50;
+const numRedCircles = 100;
 const redCircles = Array.from({ length: numRedCircles }, () => ({
   x: Math.random() * canvas.width,
   y: Math.random() * canvas.height,
-  radius: 10,
-  color: "red",
+  radius: 20,
+  color: "blue",
   dx: (Math.random() - 0.5) * 4, // Velocità orizzontale
   dy: (Math.random() - 0.5) * 4, // Velocità verticale
   targetX: null, // Obiettivo X per animazione
@@ -42,11 +42,11 @@ const redCircles = Array.from({ length: numRedCircles }, () => ({
 }));
 
 // Crea array di particelle bianche
-const numWhiteCircles = 30;
+const numWhiteCircles = 100;
 const whiteCircles = Array.from({ length: numWhiteCircles }, () => ({
   x: Math.random() * canvas.width,
   y: Math.random() * canvas.height,
-  radius: 5,
+  radius: 20,
   color: "white",
   dx: (Math.random() - 0.5) * 4, // Velocità orizzontale
   dy: (Math.random() - 0.5) * 4, // Velocità verticale
@@ -84,20 +84,16 @@ function update() {
 
   ctx.beginPath();
   ctx.ellipse(x, y, ovalWidth, ovalHeight, 0, 0, 2 * Math.PI);
-  ctx.lineWidth = 5; // Larghezza del bordo
-  ctx.strokeStyle = "white"; // Colore del bordo
-  ctx.stroke();
+  ctx.lineWidth = 0; // Larghezza del bordo
   ctx.closePath();
 
   // Disegna il secondo ovale (più piccolo del 25%)
-  const smallOvalWidth = ovalWidth * 0.75;
   const smallOvalHeight = ovalHeight * 0.75;
-
+  const smallOvalWidth = ovalWidth * 0.75;
   ctx.beginPath();
   ctx.ellipse(x, y, smallOvalWidth, smallOvalHeight, 0, 0, 2 * Math.PI);
   ctx.lineWidth = 3; // Larghezza del bordo
-  ctx.strokeStyle = "white"; // Colore del bordo
-  ctx.stroke();
+
   ctx.closePath();
 
   // Aggiorna e disegna particelle rosse
@@ -110,6 +106,10 @@ function update() {
     smallOvalWidth,
     smallOvalHeight
   );
+
+  // Connetti particelle tra di loro se vicine
+  connectParticles(redCircles);
+  connectParticles(whiteCircles);
 }
 
 // Funzione per aggiornare particelle
@@ -154,6 +154,28 @@ function updateParticles(
     ctx.fill();
     ctx.closePath();
   });
+}
+
+// Funzione per connettere particelle vicine con una linea
+function connectParticles(particles) {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const p1 = particles[i];
+      const p2 = particles[j];
+      const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+
+      // Se la distanza è minore di 50px, disegna una linea
+      if (distance < 200) {
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; // Linea semi-trasparente
+        ctx.lineWidth = 3; // Spessore linea
+        ctx.stroke();
+        ctx.closePath();
+      }
+    }
+  }
 }
 
 // Funzione per calcolare le posizioni lungo un ovale

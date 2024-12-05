@@ -1,6 +1,6 @@
 import { createEngine } from "../../shared/engine.js";
 
-const { renderer, input, run } = createEngine();
+const { renderer, input, run, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
 const gridSize = 5;
@@ -13,6 +13,7 @@ let pathComplete = false;
 let introComplete = false;
 let vibrationOffset = 5;
 let vibrationDirection = 10;
+let scalingStarted = false; // Flag per avviare la scalatura dopo il ritardo
 
 const number3Path = [
   [1, 0],
@@ -119,24 +120,31 @@ function update() {
 
     if (pathIndex === number3Path.length - 1 && currentProgress >= 1) {
       pathComplete = true;
+      setTimeout(() => {
+        scalingStarted = true; // Inizia la scalatura dopo 1 secondo
+      }, 1000);
     }
   }
 
-  if (pathComplete) {
+  if (scalingStarted) {
     grid.forEach((square) => {
-      const isInPath = number3Path.some(
-        ([r, c]) => r === square.row && c === square.col
-      );
-      if (!isInPath) {
-        square.scale = Math.max(0, square.scale - 0.02); // Scomparsa graduale
-      }
+      square.scale = Math.max(0, square.scale - 0.02); // Tutti i quadrati scompaiono gradualmente
     });
   }
 
   drawPath();
+
+  // Controlla se tutti gli elementi sono stati scalati a 0
+  const allScaledDown = grid.every(({ scale }) => scale <= 0);
+
+  if (allScaledDown) {
+    finish(); // Termina l'animazione
+  }
 }
 
 function drawPath() {
+  if (scalingStarted) return; // Non disegna il tracciato se la scalatura è iniziata
+
   ctx.beginPath();
 
   for (let i = 0; i <= pathIndex; i++) {
@@ -177,4 +185,7 @@ function drawPath() {
   }
 
   ctx.stroke();
+  if (scale <= 0) {
+    finish();
+  }
 }

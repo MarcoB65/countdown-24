@@ -1,6 +1,6 @@
 import { createEngine } from "../shared/engine.js";
 
-const { renderer, run } = createEngine();
+const { renderer, run, audio, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
 // Configurazioni
@@ -89,6 +89,10 @@ function update() {
   }
 
   ctx.globalCompositeOperation = "xor";
+
+  if (scale <= 0) {
+    finish();
+  }
 }
 
 window.addEventListener("resize", () => {
