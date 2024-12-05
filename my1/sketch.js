@@ -156,8 +156,12 @@ function update() {
 
   ctx.globalCompositeOperation = "xor";
 
+  // if (scale <= 0) {
+  //   finish();
+  // }
+
   if (getDist() < 10) {
-    setTimeout(finish, 1000);
+    setTimeout(finish, 5000);
   }
 }
 

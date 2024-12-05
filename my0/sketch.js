@@ -5,7 +5,7 @@ const { ctx, canvas } = renderer;
 
 // Percorso del file SVG
 const svgPath = "0.svg";
-
+let ratio = { w: 2, h: 3, size: canvas.height * 0.1 };
 // Funzione per caricare e convertire SVG in immagine
 function loadSVG(src) {
   return new Promise((resolve, reject) => {
@@ -31,28 +31,35 @@ let svgImage = null;
 // Crea array di particelle rosse
 const numRedCircles = 100;
 const redCircles = Array.from({ length: numRedCircles }, () => ({
-  x: Math.random() * canvas.width,
-  y: Math.random() * canvas.height,
+  x: canvas.width / 2,
+  y: canvas.height / 2,
   radius: 20,
   color: "blue",
-  dx: (Math.random() - 0.5) * 8, // Velocità orizzontale
-  dy: (Math.random() - 0.5) * 8, // Velocità verticale
-  trail: [], // Cronologia delle posizioni
+  dx: (Math.random() - 0.5) * 8,
+  dy: (Math.random() - 0.5) * 8,
+  trail: [],
+  targetX: null,
+  targetY: null,
 }));
 
 // Crea array di particelle bianche
 const numWhiteCircles = 100;
 const whiteCircles = Array.from({ length: numWhiteCircles }, () => ({
-  x: Math.random() * canvas.width,
-  y: Math.random() * canvas.height,
+  x: canvas.width / 2,
+  y: canvas.height / 2,
   radius: 20,
   color: "white",
-  dx: (Math.random() - 0.5) * 8, // Velocità orizzontale
-  dy: (Math.random() - 0.5) * 8, // Velocità verticale
-  trail: [], // Cronologia delle posizioni
+  dx: (Math.random() - 0.5) * 8,
+  dy: (Math.random() - 0.5) * 8,
+  trail: [],
+  targetX: null,
+  targetY: null,
 }));
 
-// Variabile per determinare se il mouse è premuto
+// Variabile per determinare se l'animazione è iniziata
+let isAnimationStarted = false;
+
+// Variabile per determinare se le particelle devono essere posizionate sugli ellissi
 let isMousePressed = false;
 
 function update() {
@@ -65,8 +72,8 @@ function update() {
 
   // Disegna il file SVG se è stato caricato
   if (svgImage) {
-    const imgWidth = canvas.width / 3; // Larghezza desiderata
-    const imgHeight = canvas.height / 3; // Altezza desiderata
+    const imgWidth = canvas.width / 3;
+    const imgHeight = canvas.height / 3;
     ctx.drawImage(
       svgImage,
       x - imgWidth / 2,
@@ -77,21 +84,28 @@ function update() {
   }
 
   // Disegna il primo ovale
-  const ovalWidth = canvas.width / 4.5; // Larghezza ovale
-  const ovalHeight = canvas.height / 4; // Altezza ovale
+  const ovalWidth = canvas.height;
+  const ovalHeight = canvas.height;
 
   ctx.beginPath();
-  ctx.ellipse(x, y, ovalWidth, ovalHeight, 0, 0, 2 * Math.PI);
-  ctx.lineWidth = 0; // Larghezza del bordo
+  ctx.ellipse(x, y, ovalWidth, ovalHeight, Math.PI / 2, 0, 2 * Math.PI);
+  ctx.lineWidth = 0;
   ctx.closePath();
 
   // Disegna il secondo ovale (più piccolo del 25%)
   const smallOvalHeight = ovalHeight * 0.75;
   const smallOvalWidth = ovalWidth * 0.75;
   ctx.beginPath();
-  ctx.ellipse(x, y, smallOvalWidth, smallOvalHeight, 0, 0, 2 * Math.PI);
-  ctx.lineWidth = 3; // Larghezza del bordo
-
+  ctx.ellipse(
+    x,
+    y,
+    smallOvalWidth,
+    smallOvalHeight,
+    Math.PI / 2,
+    0,
+    2 * Math.PI
+  );
+  ctx.lineWidth = 3;
   ctx.closePath();
 
   // Aggiorna e disegna particelle rosse
@@ -121,20 +135,16 @@ function updateParticles(
   const y = canvas.height / 2;
 
   particles.forEach((particle) => {
-    // Salva la posizione attuale nella scia
-    particle.trail.push({ x: particle.x, y: particle.y });
-
-    // Mantieni la scia entro un numero massimo di punti
-    if (particle.trail.length > 100) {
-      particle.trail.shift();
-    }
-
-    if (moveToOval && particle.targetX !== null && particle.targetY !== null) {
+    if (!isAnimationStarted) {
+      // Mantieni le particelle ferme al centro
+      particle.x = x;
+      particle.y = y;
+    } else if (moveToOval) {
       // Se il mouse è premuto, sposta verso la posizione target
-      particle.x += (particle.targetX - particle.x) * 0.05; // Animazione fluida
+      particle.x += (particle.targetX - particle.x) * 0.05;
       particle.y += (particle.targetY - particle.y) * 0.05;
     } else {
-      // Movimento casuale se il mouse non è premuto
+      // Movimento casuale
       particle.x += particle.dx;
       particle.y += particle.dy;
 
@@ -153,22 +163,24 @@ function updateParticles(
       }
     }
 
-    // Disegna la scia
-    particle.trail.forEach((pos, index) => {
-      const opacity = (index + 10) / particle.trail.length; // Opacità crescente
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, particle.radius, 0, 2 * Math.PI);
-      ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.2})`; // Colore semi-trasparente
-      ctx.fill();
-      ctx.closePath();
-    });
-
     // Disegna la particella
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, particle.radius, 0, 2 * Math.PI);
     ctx.fillStyle = particle.color;
     ctx.fill();
     ctx.closePath();
+  });
+}
+
+// Funzione per calcolare le posizioni lungo un ovale
+function calculateOvalPositions(particles, targetOvalWidth, targetOvalHeight) {
+  const x = canvas.width / 2;
+  const y = canvas.height / 2;
+
+  particles.forEach((particle, i) => {
+    const angle = (i / particles.length) * 2 * Math.PI;
+    particle.targetX = x + targetOvalWidth * Math.cos(angle);
+    particle.targetY = y + targetOvalHeight * Math.sin(angle);
   });
 }
 
@@ -180,13 +192,12 @@ function connectParticles(particles) {
       const p2 = particles[j];
       const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
 
-      // Se la distanza è minore di 50px, disegna una linea
       if (distance < 300) {
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"; // Linea semi-trasparente
-        ctx.lineWidth = 5; // Spessore linea
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.lineWidth = 5;
         ctx.stroke();
         ctx.closePath();
       }
@@ -194,27 +205,23 @@ function connectParticles(particles) {
   }
 }
 
-// Funzione per calcolare le posizioni lungo un ovale
-function calculateOvalPositions(particles, targetOvalWidth, targetOvalHeight) {
-  const x = canvas.width / 2;
-  const y = canvas.height / 2;
-
-  particles.forEach((particle, i) => {
-    const angle = (i / particles.length) * 2 * Math.PI; // Angolo uniforme
-    particle.targetX = x + targetOvalWidth * Math.cos(angle); // Posizione X
-    particle.targetY = y + targetOvalHeight * Math.sin(angle); // Posizione Y
-  });
-}
-
 // Eventi per il mouse
 canvas.addEventListener("mousedown", () => {
-  isMousePressed = true;
-  calculateOvalPositions(redCircles, canvas.width / 4.5, canvas.height / 4);
-  calculateOvalPositions(
-    whiteCircles,
-    (canvas.width / 4.5) * 0.75,
-    (canvas.height / 4) * 0.75
-  );
+  if (!isAnimationStarted) {
+    isAnimationStarted = true;
+  } else {
+    isMousePressed = true;
+    calculateOvalPositions(
+      redCircles,
+      ratio.w * ratio.size,
+      ratio.h * ratio.size
+    );
+    calculateOvalPositions(
+      whiteCircles,
+      ratio.w * ratio.size * 0.75,
+      ratio.h * ratio.size * 0.75
+    );
+  }
 });
 
 canvas.addEventListener("mouseup", () => {
