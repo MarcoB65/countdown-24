@@ -35,10 +35,9 @@ const redCircles = Array.from({ length: numRedCircles }, () => ({
   y: Math.random() * canvas.height,
   radius: 20,
   color: "blue",
-  dx: (Math.random() - 0.5) * 4, // Velocità orizzontale
-  dy: (Math.random() - 0.5) * 4, // Velocità verticale
-  targetX: null, // Obiettivo X per animazione
-  targetY: null, // Obiettivo Y per animazione
+  dx: (Math.random() - 0.5) * 8, // Velocità orizzontale
+  dy: (Math.random() - 0.5) * 8, // Velocità verticale
+  trail: [], // Cronologia delle posizioni
 }));
 
 // Crea array di particelle bianche
@@ -48,10 +47,9 @@ const whiteCircles = Array.from({ length: numWhiteCircles }, () => ({
   y: Math.random() * canvas.height,
   radius: 20,
   color: "white",
-  dx: (Math.random() - 0.5) * 4, // Velocità orizzontale
-  dy: (Math.random() - 0.5) * 4, // Velocità verticale
-  targetX: null, // Obiettivo X per animazione
-  targetY: null, // Obiettivo Y per animazione
+  dx: (Math.random() - 0.5) * 8, // Velocità orizzontale
+  dy: (Math.random() - 0.5) * 8, // Velocità verticale
+  trail: [], // Cronologia delle posizioni
 }));
 
 // Variabile per determinare se il mouse è premuto
@@ -123,6 +121,14 @@ function updateParticles(
   const y = canvas.height / 2;
 
   particles.forEach((particle) => {
+    // Salva la posizione attuale nella scia
+    particle.trail.push({ x: particle.x, y: particle.y });
+
+    // Mantieni la scia entro un numero massimo di punti
+    if (particle.trail.length > 100) {
+      particle.trail.shift();
+    }
+
     if (moveToOval && particle.targetX !== null && particle.targetY !== null) {
       // Se il mouse è premuto, sposta verso la posizione target
       particle.x += (particle.targetX - particle.x) * 0.05; // Animazione fluida
@@ -147,6 +153,16 @@ function updateParticles(
       }
     }
 
+    // Disegna la scia
+    particle.trail.forEach((pos, index) => {
+      const opacity = (index + 10) / particle.trail.length; // Opacità crescente
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, particle.radius, 0, 2 * Math.PI);
+      ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.2})`; // Colore semi-trasparente
+      ctx.fill();
+      ctx.closePath();
+    });
+
     // Disegna la particella
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, particle.radius, 0, 2 * Math.PI);
@@ -165,12 +181,12 @@ function connectParticles(particles) {
       const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
 
       // Se la distanza è minore di 50px, disegna una linea
-      if (distance < 200) {
+      if (distance < 300) {
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; // Linea semi-trasparente
-        ctx.lineWidth = 3; // Spessore linea
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"; // Linea semi-trasparente
+        ctx.lineWidth = 5; // Spessore linea
         ctx.stroke();
         ctx.closePath();
       }
