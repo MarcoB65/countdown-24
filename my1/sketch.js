@@ -9,6 +9,72 @@ const velocities = Array.from({ length: lineCount }, () => Math.random() * 15); 
 const horizontalOffsets = Array(lineCount).fill(0); // Offset orizzontale
 const verticalOffsets = Array(lineCount).fill(0); // Offset verticale
 
+const ambienceSound = await audio.load({
+  src: "sound/Radio.wav",
+  loop: true,
+});
+
+let ambienceSoundInst = null;
+
+// Funzione per calcolare il volume in base alla posizione del mouse
+function calculateVolume(x, y, screenWidth, screenHeight) {
+  const centerX = screenWidth / 2;
+  const centerY = screenHeight / 2;
+
+  // Calcola la distanza del cursore dal centro
+  const distanceFromCenter = Math.sqrt(
+    Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)
+  );
+
+  // Calcola la distanza massima possibile (angolo dello schermo)
+  const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
+
+  // Normalizza la distanza in un range da 0 a 1
+  return Math.min(1, distanceFromCenter / maxDistance);
+}
+
+// Funzione per calcolare il pitch casuale
+function calculateRandomPitch(basePitch, variation) {
+  return basePitch + (Math.random() * variation - variation / 2);
+}
+
+function playSound() {
+  if (!ambienceSoundInst) {
+    ambienceSoundInst = ambienceSound.play();
+  }
+}
+
+function stopSound() {
+  if (ambienceSoundInst) {
+    ambienceSoundInst.setVolume(0);
+    ambienceSoundInst = null;
+  }
+}
+
+function updateSound(event) {
+  if (ambienceSoundInst) {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    // Calcola il volume basandosi sulla posizione del mouse
+    const volume = calculateVolume(
+      event.clientX,
+      event.clientY,
+      screenWidth,
+      screenHeight
+    );
+    ambienceSoundInst.setVolume(volume);
+
+    // Calcola il pitch con una variazione casuale
+    const pitch = calculateRandomPitch(1.0, 0.1); // Pitch base è 1.0 con variazione di ±0.25
+    ambienceSoundInst.setPlaybackRate(pitch); // Modifica la velocità di riproduzione
+  }
+}
+
+document.addEventListener("mousedown", playSound);
+document.addEventListener("mouseup", stopSound);
+document.addEventListener("mousemove", updateSound);
+
 run(update);
 
 let mouse = { x: canvas / 2, y: canvas / 2 };
@@ -90,8 +156,8 @@ function update() {
 
   ctx.globalCompositeOperation = "xor";
 
-  if (scale <= 0) {
-    finish();
+  if (getDist() < 10) {
+    setTimeout(finish, 1000);
   }
 }
 
