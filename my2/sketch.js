@@ -187,21 +187,7 @@ function update(dt) {
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Disegna particelle
-  particles.forEach((particle) => {
-    ctx.fillStyle = particle.color; // Usa il colore della particella
-    ctx.beginPath();
-    ctx.arc(
-      particle.x,
-      particle.y,
-      10 * particle.scale * particle.weight * initialScale, // Scala anche le particelle
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-  });
-
-  // Disegna il numero "2"
+  // Disegna il numero "2" PRIMA delle particelle
   ctx.globalAlpha = numberOpacity; // Imposta l'opacità del numero
   ctx.fillStyle = "white";
   ctx.textBaseline = "middle";
@@ -214,6 +200,20 @@ function update(dt) {
     ctx.fillText("2", numberX, numberY);
   }
   ctx.globalAlpha = 1; // Ripristina l'opacità per altri elementi
+
+  // Disegna particelle DOPO il numero
+  particles.forEach((particle) => {
+    ctx.fillStyle = particle.color; // Usa il colore della particella
+    ctx.beginPath();
+    ctx.arc(
+      particle.x,
+      particle.y,
+      10 * particle.scale * particle.weight * initialScale, // Scala anche le particelle
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  });
 
   // Disegna il buco aspiratore
   const dx = centerX - mouseX;

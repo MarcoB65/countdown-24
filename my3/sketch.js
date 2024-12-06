@@ -1,6 +1,6 @@
 import { createEngine } from "../../shared/engine.js";
 
-const { renderer, input, run, finish } = createEngine();
+const { renderer, input, run, audio, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
 const gridSize = 5;
@@ -33,6 +33,11 @@ const number3Path = [
   [3, 0],
 ];
 
+function getRandomColor() {
+  const colors = ["rgb(0, 255, 162)"];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
 function initializeGrid() {
   const totalSize = gridSize * squareSize + (gridSize - 1) * spacing;
   const startX = (canvas.width - totalSize) / 2;
@@ -52,6 +57,7 @@ function initializeGrid() {
         vibrating: false, // Flag per vibrazione
         vibrationOffset: { x: 0, y: 0 }, // Offset vibrazione
         vibrationTimer: 0, // Timer vibrazione
+        color: "white", // Colore iniziale del quadrato
       });
     }
   }
@@ -115,16 +121,39 @@ function updateVibrations() {
   });
 }
 
+const ambienceSound = await audio.load({
+  src: "sound/Boing.wav",
+  loop: false,
+});
+const ambienceSoundInst = ambienceSound.play();
+
+const impactSound = await audio.load("sound/Boing.wav");
+
 function triggerVibration(row, col) {
   const square = grid.find((s) => s.row === row && s.col === col);
   if (square && !square.vibrating) {
     square.vibrating = true;
     square.vibrationTimer = 10; // Durata vibrazione in frame
+
+    // Cambia colore del quadrato durante la vibrazione
+    const newColor = getRandomColor();
+    if (
+      newColor === "rgb(0, 255, 162)" &&
+      square.color !== "rgb(0, 255, 162)"
+    ) {
+      // Riproduci il suono solo se il quadrato cambia colore e diventa verde
+      impactSound.play();
+    }
+
+    // Aggiorna il colore del quadrato
+    square.color = newColor;
   }
 }
 
 function drawPath() {
   if (scalingPhase2Started) return;
+  ctx.strokeStyle = "rgb(0, 255, 162)"; // Imposta il colore del tracciato
+  ctx.lineWidth = 100; // Imposta la larghezza del tracciato
 
   ctx.beginPath();
 
@@ -200,13 +229,21 @@ function update() {
 
   updateVibrations();
 
+  // Sfondo nero
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "white";
-  grid.forEach(({ x, y, scale, vibrationOffset }) => {
+  // Disegna il tracciato PRIMA dei quadrati
+  drawPath();
+
+  // Disegna i quadrati
+  grid.forEach(({ x, y, scale, vibrationOffset, color }) => {
     if (scale > 0) {
       const size = squareSize * scale;
+
+      // Usa il colore attuale del quadrato
+      ctx.fillStyle = color;
+
       ctx.fillRect(
         x + (squareSize - size) / 2 + vibrationOffset.x,
         y + (squareSize - size) / 2 + vibrationOffset.y,
@@ -274,8 +311,5 @@ function update() {
       finish();
     }
   }
-
-  drawPath();
 }
-
 run(update);

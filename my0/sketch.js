@@ -53,7 +53,7 @@ let svgImage = null;
 })();
 
 // Crea array di particelle rosse
-const numRedCircles = 200;
+const numRedCircles = 250;
 const redCircles = Array.from({ length: numRedCircles }, () => ({
   x: canvas.width / 2,
   y: canvas.height / 2,
@@ -68,7 +68,7 @@ const redCircles = Array.from({ length: numRedCircles }, () => ({
 }));
 
 // Crea array di particelle bianche
-const numWhiteCircles = 200;
+const numWhiteCircles = 250;
 const whiteCircles = Array.from({ length: numWhiteCircles }, () => ({
   x: canvas.width / 2,
   y: canvas.height / 2,
@@ -228,7 +228,7 @@ function connectParticles(particles) {
       const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
 
       // Connetti particelle solo se almeno una non è sull'ellissi
-      if (!p1.onTarget && !p2.onTarget && distance < 300) {
+      if (!p1.onTarget && !p2.onTarget && distance < 200) {
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
