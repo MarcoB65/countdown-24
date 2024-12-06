@@ -134,6 +134,24 @@ function update() {
   );
   connectParticles(redCircles);
   connectParticles(whiteCircles);
+
+  // Controlla se tutte le particelle sono fuori dallo schermo
+  if (
+    areAllParticlesOffScreen(redCircles) &&
+    areAllParticlesOffScreen(whiteCircles)
+  ) {
+    finish();
+  }
+}
+
+function areAllParticlesOffScreen(particles) {
+  return particles.every(
+    (particle) =>
+      particle.x + particle.radius < 0 ||
+      particle.x - particle.radius > canvas.width ||
+      particle.y + particle.radius < 0 ||
+      particle.y - particle.radius > canvas.height
+  );
 }
 
 function updateParticles(
@@ -242,4 +260,3 @@ function runCustom() {
 }
 
 runCustom();
-finish();
