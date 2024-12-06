@@ -62,6 +62,7 @@ for (let i = 0; i < maxParticles; i++) {
     velocityX: 0,
     velocityY: 0,
     weight: Math.random() * 2,
+    color: Math.random() < 0.5 ? "white" : "rgb(0, 255, 162)", // 50% bianco, 50% rosso
   });
 }
 numberOpacity = 0;
@@ -80,13 +81,6 @@ function update(dt) {
   } else {
     initialScale = 1; // Mantieni la scala a 1 dopo la durata
   }
-
-  // // Gestione dell'opacità del numero
-  // if (elapsedTime < opacityDuration) {
-  //   numberOpacity = elapsedTime / opacityDuration; // Interpola l'opacità da 0 a 1
-  // } else {
-  //   numberOpacity = 1; // Mantieni l'opacità a 1 dopo la durata
-  // }
 
   const mouseX = input.getX();
   const mouseY = input.getY();
@@ -195,7 +189,7 @@ function update(dt) {
 
   // Disegna particelle
   particles.forEach((particle) => {
-    ctx.fillStyle = "white";
+    ctx.fillStyle = particle.color; // Usa il colore della particella
     ctx.beginPath();
     ctx.arc(
       particle.x,

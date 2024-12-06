@@ -132,7 +132,7 @@ function update() {
       lineHeight
     ); // Clipping ristretto al numero "1"
     ctx.clip(); // Applica il clipping
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "rgb(0, 255, 162)";
     ctx.fillText("1", x + horizontalOffsets[i], y); // Disegna il numero con offset orizzontale
     ctx.restore(); // Ripristina il contesto
   }
