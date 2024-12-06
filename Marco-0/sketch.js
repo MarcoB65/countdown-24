@@ -3,6 +3,7 @@ import { createEngine } from "../../shared/engine.js";
 const { renderer, run, audio, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
+//SOUND PART
 const ambienceSound = await audio.load({
   src: "sound/Climax.wav",
   loop: false,
@@ -18,7 +19,6 @@ function playSound() {
 
 function stopSound() {
   if (ambienceSoundInst) {
-    console.log("mouse up / stop sound");
     ambienceSoundInst.setVolume(0);
     ambienceSoundInst = null;
   }
@@ -27,10 +27,9 @@ function stopSound() {
 document.addEventListener("mousedown", playSound);
 document.addEventListener("mouseup", stopSound);
 
-// Percorso del file SVG
 const svgPath = "0.svg";
 let ratio = { w: 3, h: 4, size: canvas.height * 0.05 };
-// Funzione per caricare e convertire SVG in immagine
+
 function loadSVG(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -40,10 +39,8 @@ function loadSVG(src) {
   });
 }
 
-// Variabile per immagine SVG
 let svgImage = null;
 
-// Carica l'SVG all'avvio
 (async () => {
   try {
     svgImage = await loadSVG(svgPath);
@@ -52,7 +49,7 @@ let svgImage = null;
   }
 })();
 
-// Crea array di particelle rosse
+//1°CIRCLE
 const numRedCircles = 250;
 const redCircles = Array.from({ length: numRedCircles }, () => ({
   x: canvas.width / 2,
@@ -64,10 +61,10 @@ const redCircles = Array.from({ length: numRedCircles }, () => ({
   trail: [],
   targetX: null,
   targetY: null,
-  onTarget: false, // Nuova proprietà
+  onTarget: false,
 }));
 
-// Crea array di particelle bianche
+//2° CIRCLE
 const numWhiteCircles = 250;
 const whiteCircles = Array.from({ length: numWhiteCircles }, () => ({
   x: canvas.width / 2,
@@ -79,24 +76,19 @@ const whiteCircles = Array.from({ length: numWhiteCircles }, () => ({
   trail: [],
   targetX: null,
   targetY: null,
-  onTarget: false, // Nuova proprietà
+  onTarget: false,
 }));
 
-// Variabile per determinare se l'animazione è iniziata
 let isAnimationStarted = false;
-
-// Variabile per determinare se le particelle devono essere posizionate sugli ellissi
 let isMousePressed = false;
 
 function update() {
   const x = canvas.width / 2;
   const y = canvas.height / 2;
 
-  // Pulisce il canvas
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Disegna il file SVG se è stato caricato
   if (svgImage) {
     const imgWidth = canvas.width / 3;
     const imgHeight = canvas.height / 3;
@@ -109,7 +101,6 @@ function update() {
     );
   }
 
-  // Disegna il primo ovale
   const ovalWidth = canvas.height;
   const ovalHeight = canvas.height;
 
@@ -118,9 +109,9 @@ function update() {
   ctx.lineWidth = 0;
   ctx.closePath();
 
-  // Disegna il secondo ovale (più piccolo del 25%)
   const smallOvalHeight = ovalHeight * 0.75;
   const smallOvalWidth = ovalWidth * 0.75;
+
   ctx.beginPath();
   ctx.ellipse(
     x,
@@ -134,23 +125,17 @@ function update() {
   ctx.lineWidth = 3;
   ctx.closePath();
 
-  // Aggiorna e disegna particelle rosse
   updateParticles(redCircles, isMousePressed, ovalWidth, ovalHeight);
-
-  // Aggiorna e disegna particelle bianche
   updateParticles(
     whiteCircles,
     isMousePressed,
     smallOvalWidth,
     smallOvalHeight
   );
-
-  // Connetti particelle tra di loro se vicine
   connectParticles(redCircles);
   connectParticles(whiteCircles);
 }
 
-// Funzione per aggiornare particelle
 function updateParticles(
   particles,
   moveToOval,
@@ -162,43 +147,23 @@ function updateParticles(
 
   particles.forEach((particle) => {
     if (!isAnimationStarted) {
-      // Mantieni le particelle ferme al centro
       particle.x = x;
       particle.y = y;
     } else if (moveToOval) {
-      // Se il mouse è premuto, sposta verso la posizione target
-      particle.x += (particle.targetX - particle.x) * 0.03;
-      particle.y += (particle.targetY - particle.y) * 0.03;
+      particle.x += (particle.targetX - particle.x) * 0.025;
+      particle.y += (particle.targetY - particle.y) * 0.025;
 
-      // Controlla se la particella è sufficientemente vicina alla posizione target
       const distanceToTarget = Math.sqrt(
         (particle.x - particle.targetX) ** 2 +
           (particle.y - particle.targetY) ** 2
       );
-      particle.onTarget = distanceToTarget < 5; // Imposta `onTarget` a true se è vicina alla posizione target
+      particle.onTarget = distanceToTarget < 5;
     } else {
-      // Movimento casuale
       particle.x += particle.dx;
       particle.y += particle.dy;
-
-      // Controlla i bordi del canvas e inverte la direzione
-      if (
-        particle.x - particle.radius < 0 ||
-        particle.x + particle.radius > canvas.width
-      ) {
-        particle.dx *= -1;
-      }
-      if (
-        particle.y - particle.radius < 0 ||
-        particle.y + particle.radius > canvas.height
-      ) {
-        particle.dy *= -1;
-      }
-
-      particle.onTarget = false; // Se non si muove verso un ovale, `onTarget` è false
+      particle.onTarget = false;
     }
 
-    // Disegna la particella
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, particle.radius, 0, 2 * Math.PI);
     ctx.fillStyle = particle.color;
@@ -207,7 +172,6 @@ function updateParticles(
   });
 }
 
-// Funzione per calcolare le posizioni lungo un ovale
 function calculateOvalPositions(particles, targetOvalWidth, targetOvalHeight) {
   const x = canvas.width / 2;
   const y = canvas.height / 2;
@@ -219,7 +183,7 @@ function calculateOvalPositions(particles, targetOvalWidth, targetOvalHeight) {
   });
 }
 
-// Funzione per connettere particelle vicine con una linea
+//questo permette di connettere le particelle
 function connectParticles(particles) {
   for (let i = 0; i < particles.length; i++) {
     for (let j = i + 1; j < particles.length; j++) {
@@ -227,8 +191,7 @@ function connectParticles(particles) {
       const p2 = particles[j];
       const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
 
-      // Connetti particelle solo se almeno una non è sull'ellissi
-      if (!p1.onTarget && !p2.onTarget && distance < 200) {
+      if (!p1.onTarget && !p2.onTarget && distance < 300) {
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
@@ -241,7 +204,6 @@ function connectParticles(particles) {
   }
 }
 
-// Eventi per il mouse
 canvas.addEventListener("mousedown", () => {
   if (!isAnimationStarted) {
     isAnimationStarted = true;
@@ -262,11 +224,21 @@ canvas.addEventListener("mousedown", () => {
 
 canvas.addEventListener("mouseup", () => {
   isMousePressed = false;
+
+  redCircles.forEach((particle) => {
+    particle.dx *= 2.5;
+    particle.dy *= 2.5;
+  });
+
+  whiteCircles.forEach((particle) => {
+    particle.dx *= 2.5;
+    particle.dy *= 2.5;
+  });
 });
 
-// Gestione del ciclo di rendering manualmente
 function runCustom() {
   update();
   requestAnimationFrame(runCustom);
 }
+
 runCustom();
