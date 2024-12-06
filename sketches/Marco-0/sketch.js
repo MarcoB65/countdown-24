@@ -1,4 +1,4 @@
-import { createEngine } from "../../shared/engine.js";
+import { createEngine } from "../../../shared/engine.js";
 
 const { renderer, run, audio, finish } = createEngine();
 const { ctx, canvas } = renderer;
@@ -242,3 +242,4 @@ function runCustom() {
 }
 
 runCustom();
+finish();
